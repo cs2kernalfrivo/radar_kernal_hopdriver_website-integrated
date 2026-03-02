@@ -1,0 +1,28 @@
+C:\Users\dahmo\Desktop\cs2\working cs2 spotify\radar_kernal_hopdriver\radar_kernal_hopdriver\bin\Release\net8.0\radar_kernal_hopdriver.exe
+C:\Users\dahmo\Desktop\cs2\working cs2 spotify\radar_kernal_hopdriver\radar_kernal_hopdriver\bin\Release\net8.0\radar_kernal_hopdriver.deps.json
+C:\Users\dahmo\Desktop\cs2\working cs2 spotify\radar_kernal_hopdriver\radar_kernal_hopdriver\bin\Release\net8.0\radar_kernal_hopdriver.runtimeconfig.json
+C:\Users\dahmo\Desktop\cs2\working cs2 spotify\radar_kernal_hopdriver\radar_kernal_hopdriver\bin\Release\net8.0\radar_kernal_hopdriver.dll
+C:\Users\dahmo\Desktop\cs2\working cs2 spotify\radar_kernal_hopdriver\radar_kernal_hopdriver\bin\Release\net8.0\radar_kernal_hopdriver.pdb
+C:\Users\dahmo\Desktop\cs2\working cs2 spotify\radar_kernal_hopdriver\radar_kernal_hopdriver\obj\Release\net8.0\radar_kernal_hopdriver.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\dahmo\Desktop\cs2\working cs2 spotify\radar_kernal_hopdriver\radar_kernal_hopdriver\obj\Release\net8.0\radar_kernal_hopdriver.AssemblyInfoInputs.cache
+C:\Users\dahmo\Desktop\cs2\working cs2 spotify\radar_kernal_hopdriver\radar_kernal_hopdriver\obj\Release\net8.0\radar_kernal_hopdriver.AssemblyInfo.cs
+C:\Users\dahmo\Desktop\cs2\working cs2 spotify\radar_kernal_hopdriver\radar_kernal_hopdriver\obj\Release\net8.0\radar_kernal_hopdriver.csproj.CoreCompileInputs.cache
+C:\Users\dahmo\Desktop\cs2\working cs2 spotify\radar_kernal_hopdriver\radar_kernal_hopdriver\obj\Release\net8.0\radar_kernal_hopdriver.dll
+C:\Users\dahmo\Desktop\cs2\working cs2 spotify\radar_kernal_hopdriver\radar_kernal_hopdriver\obj\Release\net8.0\refint\radar_kernal_hopdriver.dll
+C:\Users\dahmo\Desktop\cs2\working cs2 spotify\radar_kernal_hopdriver\radar_kernal_hopdriver\obj\Release\net8.0\radar_kernal_hopdriver.pdb
+C:\Users\dahmo\Desktop\cs2\working cs2 spotify\radar_kernal_hopdriver\radar_kernal_hopdriver\obj\Release\net8.0\radar_kernal_hopdriver.genruntimeconfig.cache
+C:\Users\dahmo\Desktop\cs2\working cs2 spotify\radar_kernal_hopdriver\radar_kernal_hopdriver\obj\Release\net8.0\ref\radar_kernal_hopdriver.dll
+C:\Users\dahmo\Desktop\cs2\working cs2 spotify\radar_kernal_hopdriver_website integrated\radar_kernal_hopdriver\bin\Release\net8.0\radar_kernal_hopdriver.exe
+C:\Users\dahmo\Desktop\cs2\working cs2 spotify\radar_kernal_hopdriver_website integrated\radar_kernal_hopdriver\bin\Release\net8.0\radar_kernal_hopdriver.deps.json
+C:\Users\dahmo\Desktop\cs2\working cs2 spotify\radar_kernal_hopdriver_website integrated\radar_kernal_hopdriver\bin\Release\net8.0\radar_kernal_hopdriver.runtimeconfig.json
+C:\Users\dahmo\Desktop\cs2\working cs2 spotify\radar_kernal_hopdriver_website integrated\radar_kernal_hopdriver\bin\Release\net8.0\radar_kernal_hopdriver.dll
+C:\Users\dahmo\Desktop\cs2\working cs2 spotify\radar_kernal_hopdriver_website integrated\radar_kernal_hopdriver\bin\Release\net8.0\radar_kernal_hopdriver.pdb
+C:\Users\dahmo\Desktop\cs2\working cs2 spotify\radar_kernal_hopdriver_website integrated\radar_kernal_hopdriver\obj\Release\net8.0\radar_kernal_hopdriver.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\dahmo\Desktop\cs2\working cs2 spotify\radar_kernal_hopdriver_website integrated\radar_kernal_hopdriver\obj\Release\net8.0\radar_kernal_hopdriver.AssemblyInfoInputs.cache
+C:\Users\dahmo\Desktop\cs2\working cs2 spotify\radar_kernal_hopdriver_website integrated\radar_kernal_hopdriver\obj\Release\net8.0\radar_kernal_hopdriver.AssemblyInfo.cs
+C:\Users\dahmo\Desktop\cs2\working cs2 spotify\radar_kernal_hopdriver_website integrated\radar_kernal_hopdriver\obj\Release\net8.0\radar_kernal_hopdriver.csproj.CoreCompileInputs.cache
+C:\Users\dahmo\Desktop\cs2\working cs2 spotify\radar_kernal_hopdriver_website integrated\radar_kernal_hopdriver\obj\Release\net8.0\radar_kernal_hopdriver.dll
+C:\Users\dahmo\Desktop\cs2\working cs2 spotify\radar_kernal_hopdriver_website integrated\radar_kernal_hopdriver\obj\Release\net8.0\refint\radar_kernal_hopdriver.dll
+C:\Users\dahmo\Desktop\cs2\working cs2 spotify\radar_kernal_hopdriver_website integrated\radar_kernal_hopdriver\obj\Release\net8.0\radar_kernal_hopdriver.pdb
+C:\Users\dahmo\Desktop\cs2\working cs2 spotify\radar_kernal_hopdriver_website integrated\radar_kernal_hopdriver\obj\Release\net8.0\radar_kernal_hopdriver.genruntimeconfig.cache
+C:\Users\dahmo\Desktop\cs2\working cs2 spotify\radar_kernal_hopdriver_website integrated\radar_kernal_hopdriver\obj\Release\net8.0\ref\radar_kernal_hopdriver.dll
