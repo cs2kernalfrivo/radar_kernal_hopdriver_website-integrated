@@ -11,7 +11,6 @@ using System.Numerics;
 
 namespace WebRadarSender
 {
-    // The Packet structure sent to Django
     public class RadarPacket
     {
         public string MapName { get; set; }
@@ -25,12 +24,12 @@ namespace WebRadarSender
         public float Y { get; set; }
         public float Z { get; set; }
         public int Team { get; set; }
+        public float Yaw { get; set; } // Added for rotation
     }
 
     class Program
     {
         private static readonly HttpClient httpClient = new HttpClient();
-        private static bool isServerConnected = true;
 
         static void Main(string[] args)
         {
@@ -80,20 +79,19 @@ namespace WebRadarSender
                 Console.Write(".");
             }
 
-            Console.WriteLine($"\n[+] Found CS2 (PID: {pid})");
-            Console.WriteLine($"[+] Client.dll: 0x{clientBase:X}");
+            Console.WriteLine($"\n[+] Found CS2 (PID: {pid}) at 0x{clientBase:X}");
 
             // --- OFFSETS ---
             int dwEntityList = 0x24AB1B8;
-            int dwGlobalVars = 0x205A580; // Offset to find current map
+            int dwGlobalVars = 0x205A580;
             int m_hPlayerPawn = 0x90C;
             int m_iszPlayerName = 0x6F8;
             int m_entitySpottedState = 0x26E0;
             int m_bSpotted = 0x8;
-
             int m_iHealth = 0x354;
             int m_iTeamNum = 0x3F3;
             int m_vOldOrigin = 0x1588;
+            int m_angEyeAngles = 0x3DD0; // Using your confirmed offset
 
             while (!targetProcess.HasExited)
             {
@@ -126,7 +124,7 @@ namespace WebRadarSender
                         {
                             if (listEntry == 0) continue;
 
-                            // Note: 0x70 (112) is the correct stride for newer CS2 versions. 
+                            // Using 0x70 stride as confirmed working
                             ulong currentController = driver.ReadMemory<ulong>(pid, listEntry + (ulong)(i * 0x70));
                             if (currentController == 0) continue;
 
@@ -139,17 +137,18 @@ namespace WebRadarSender
                             ulong currentPawn = driver.ReadMemory<ulong>(pid, listEntry2 + (ulong)(0x70 * (pawnHandle & 0x1FF)));
                             if (currentPawn == 0) continue;
 
-                            // Read Health FIRST before writing to memory to double-check if it's a valid entity
+                            // Safety Check: Health
                             int health = driver.ReadMemory<int>(pid, currentPawn + (ulong)m_iHealth);
                             if (health <= 0 || health > 100) continue;
 
-                            // Force in-game radar safely (Only execute if currentPawn is a validated pointer!)
+                            // --- PART 1: IN-GAME RADAR HACK ---
                             ulong spottedAddress = currentPawn + (ulong)m_entitySpottedState + (ulong)m_bSpotted;
                             driver.WriteMemory<bool>(pid, spottedAddress, true);
 
-                            // Read Team & Pos
+                            // --- PART 2: DATA GATHERING ---
                             int team = driver.ReadMemory<int>(pid, currentPawn + (ulong)m_iTeamNum);
                             Vector3 pos = driver.ReadMemory<Vector3>(pid, currentPawn + (ulong)m_vOldOrigin);
+                            Vector3 angles = driver.ReadMemory<Vector3>(pid, currentPawn + (ulong)m_angEyeAngles);
 
                             // Read Name safely
                             string name = "Unknown";
@@ -165,7 +164,8 @@ namespace WebRadarSender
                                 X = pos.X,
                                 Y = pos.Y,
                                 Z = pos.Z,
-                                Team = team
+                                Team = team,
+                                Yaw = angles.Y // Needed for web rotation
                             });
                         }
                     }
@@ -185,21 +185,24 @@ namespace WebRadarSender
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[!] Error: {ex.Message}");
+                    // Catching errors to prevent the entire loop from crashing
+                    Console.WriteLine($"[!] Loop Error: {ex.Message}");
                 }
                 Thread.Sleep(20);
             }
+        }
 
-            static async Task SendToDjango(RadarPacket data)
+        static async Task SendToDjango(RadarPacket data)
+        {
+            try
             {
-                try
-                {
-                    string json = JsonSerializer.Serialize(data);
-                    var content = new StringContent(json, Encoding.UTF8, "application/json");
-                    await httpClient.PostAsync("http://98.89.6.230/api/radar/update/", content);
-                    isServerConnected = true;
-                }
-                catch { isServerConnected = false; }
+                string json = JsonSerializer.Serialize(data);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                await httpClient.PostAsync("http://98.89.6.230/api/radar/update/", content);
+            }
+            catch
+            {
+                // Silently ignore web errors to keep the console clean
             }
         }
     }

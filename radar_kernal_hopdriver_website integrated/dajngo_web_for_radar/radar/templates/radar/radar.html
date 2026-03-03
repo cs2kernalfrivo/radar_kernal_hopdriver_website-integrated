@@ -3,66 +3,78 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>CS2 Web Radar - All Maps</title>
+    <title>CS2 Web Radar - Rotating Minimap</title>
     <style>
         body { 
             background-color: #0f0f0f; 
             color: white; 
             font-family: 'Segoe UI', Arial, sans-serif; 
+            margin: 0; 
             display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center;
             height: 100vh;
-            margin: 0;
             overflow: hidden;
         }
 
-        #map-header {
-            width: 1000px;
+        /* Sidebar for selecting player */
+        #sidebar {
+            width: 250px;
+            background: #151515;
+            border-right: 2px solid #333;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
+            flex-direction: column;
+            padding: 20px;
+            z-index: 100;
         }
 
-        #map-title { 
-            margin: 0; 
-            text-transform: uppercase; 
-            letter-spacing: 3px; 
-            color: #eee;
-            text-shadow: 0 0 10px rgba(255,255,255,0.2);
+        #player-select {
+            background: #222;
+            color: #ff9800;
+            border: 1px solid #444;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 14px;
         }
 
-        #status-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background-color: #f44336; /* Default Red */
-            box-shadow: 0 0 10px #f44336;
-        }
-        .online-dot { background-color: #4caf50 !important; box-shadow: 0 0 10px #4caf50 !important; }
-
-        #map-container {
+        /* The Viewport (Fixed 1000x1000 window on your screen) */
+        #viewport {
             position: relative;
             width: 1000px;
             height: 1000px;
-            background-color: #1a1a1a;
+            margin: auto;
+            border: 4px solid #333;
+            background-color: #000;
+            overflow: hidden; /* Clips the map so it doesn't "swim" outside */
+        }
+
+        /* The Map Container (This moves and spins inside the viewport) */
+        #map-container {
+            position: absolute;
+            width: 1000px;
+            height: 1000px;
             background-size: 1000px 1000px;
             background-repeat: no-repeat;
-            border: 4px solid #333;
-            box-shadow: 0 0 60px rgba(0,0,0,0.9);
+            transform-origin: 0 0; /* Mathematical requirement for stable translation */
         }
 
         .player-dot {
             position: absolute;
-            width: 16px;
-            height: 16px;
+            width: 18px;
+            height: 18px;
             border-radius: 50%;
             border: 2px solid white;
-            transform: translate(-50%, -50%);
             z-index: 10;
-            transition: left 0.08s linear, top 0.08s linear;
+            margin-left: -9px;
+            margin-top: -9px;
+        }
+
+        .view-pointer {
+            position: absolute;
+            width: 0; height: 0; 
+            border-left: 9px solid transparent;
+            border-right: 9px solid transparent;
+            border-bottom: 30px solid rgba(255, 255, 255, 0.8);
+            top: -25px; left: 50%;
+            margin-left: -9px;
         }
 
         .player-name {
@@ -71,39 +83,48 @@
             font-size: 12px;
             font-weight: bold;
             text-shadow: 2px 2px 3px black;
-            transform: translate(-50%, -26px);
+            text-align: center;
+            width: 120px;
+            margin-left: -60px;
+            margin-top: 15px; 
             white-space: nowrap;
             z-index: 11;
         }
 
-        /* Team Colors */
-        .team-2 { background-color: #ff9800; border-color: #ffcc80; } /* Terrorists */
-        .team-3 { background-color: #2196f3; border-color: #90caf9; } /* Counter-Terrorists */
+        .team-2 { background-color: #ff9800; } .team-2 .view-pointer { border-bottom-color: rgba(255, 152, 0, 0.7); }
+        .team-3 { background-color: #2196f3; } .team-3 .view-pointer { border-bottom-color: rgba(33, 150, 243, 0.7); }
+        
+        #map-label { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 5px 10px; z-index: 1000; border: 1px solid #444; }
     </style>
 </head>
 <body>
 
-    <div id="map-header">
-        <h1 id="map-title">Waiting for game...</h1>
-        <div id="status-dot" title="Connection Status"></div>
+    <div id="sidebar">
+        <h2 style="color: #eee; margin-top: 0;">TRACKING</h2>
+        <label style="font-size: 12px; color: #888;">SELECT PLAYER:</label>
+        <select id="player-select">
+            <option value="none">-- Static Map --</option>
+        </select>
     </div>
-    
-    <div id="map-container">
-        <div id="player-layer"></div>
+
+    <div id="viewport">
+        <div id="map-label">MAP: <span id="map-name-display">WAITING...</span></div>
+        <div id="map-container">
+            <div id="player-layer"></div>
+        </div>
     </div>
 
     <script>
         const playerLayer = document.getElementById('player-layer');
         const mapContainer = document.getElementById('map-container');
-        const mapTitle = document.getElementById('map-title');
-        const statusDot = document.getElementById('status-dot');
+        const playerSelect = document.getElementById('player-select');
+        const mapNameDisplay = document.getElementById('map-name-display');
 
-        // --- MAP CONFIGURATIONS (Internal Name vs Your Filenames) ---
         const mapConfigs = {
             "de_dust2":    { "img": "{% static 'radar/Cs2_dust2_overview.webp' %}", "x": -2476, "y": 3239, "scale": 4.4 },
             "de_mirage":   { "img": "{% static 'radar/Cs2_mirage_radar.webp' %}",  "x": -3230, "y": 1713, "scale": 5.0 },
             "de_inferno":  { "img": "{% static 'radar/CS2_inferno_radar.webp' %}", "x": -2087, "y": 3870, "scale": 4.9 },
-            "de_ancient":  { "img": "{% static 'radar/Ancient_Radar.webp' %}",     "x": -2976, "y": 2176, "scale": 5.0 },
+            "de_ancient_night":  { "img": "{% static 'radar/Cs2_Ancient_Radar.webp' %}",     "x": -2976, "y": 2176, "scale": 5.0 },
             "cs_italy":    { "img": "{% static 'radar/Cs2_italy_radar.webp' %}",   "x": -2647, "y": 2592, "scale": 4.45 },
             "de_nuke":     { "img": "{% static 'radar/Cs2_nuke_radar.webp' %}",    "x": -3453, "y": 2887, "scale": 7.0 },
             "cs_office":   { "img": "{% static 'radar/Cs2_office_radar.webp' %}",  "x": -1838, "y": 1858, "scale": 4.1 },
@@ -114,66 +135,98 @@
         };
 
         let currentActiveMap = "";
-        const resizeFactor = 1000 / 1024; // Converts standard 1024 coords to your 1000px map
+        let trackedPlayerName = "none";
+        const resizeFactor = 1000 / 1024;
 
         const socket = new WebSocket('ws://' + window.location.host + '/ws/radar/');
 
-        socket.onopen = () => statusDot.classList.add('online-dot');
-        socket.onclose = () => statusDot.classList.remove('online-dot');
+        playerSelect.addEventListener('change', (e) => { trackedPlayerName = e.target.value; });
 
         socket.onmessage = function(e) {
             const packet = JSON.parse(e.data);
-            
-            // Clean the map name (strip "maps/" prefix if present)
-            let rawMapName = packet.MapName || "unknown";
-            let cleanMapName = rawMapName.replace("maps/", "").replace(".vpk", "");
+            let rawMap = packet.MapName || "unknown";
+            let cleanMap = rawMap.replace("maps/", "").replace(".vpk", "");
 
-            // Change background if map switched
-            if (cleanMapName !== currentActiveMap) {
-                currentActiveMap = cleanMapName;
-                mapTitle.innerText = "Current Map: " + currentActiveMap.replace("de_", "").replace("cs_", "");
-                
-                const config = mapConfigs[currentActiveMap];
-                if (config) {
-                    mapContainer.style.backgroundImage = `url(${config.img})`;
-                } else {
-                    mapContainer.style.backgroundImage = "none";
-                    console.warn("No config found for: " + currentActiveMap);
-                }
+            if (cleanMap !== currentActiveMap) {
+                currentActiveMap = cleanMap;
+                mapNameDisplay.innerText = currentActiveMap.toUpperCase();
+                if (mapConfigs[cleanMap]) mapContainer.style.backgroundImage = `url(${mapConfigs[cleanMap].img})`;
             }
 
-            // Draw players
+            updateDropdown(packet.Players);
             renderFrame(packet.Players, currentActiveMap);
         };
+
+        function updateDropdown(players) {
+            const currentOptions = Array.from(playerSelect.options).map(o => o.value);
+            players.forEach(p => {
+                if (!currentOptions.includes(p.Name)) {
+                    const opt = document.createElement('option');
+                    opt.value = p.Name; opt.innerText = p.Name;
+                    playerSelect.appendChild(opt);
+                }
+            });
+        }
 
         function renderFrame(players, mapName) {
             playerLayer.innerHTML = ''; 
             const config = mapConfigs[mapName];
             if (!config || !players) return;
 
+            let trackedPlayer = players.find(p => p.Name === trackedPlayerName);
+            
+            // MATH FROM YOUR WORKING SCRIPT
+            const getMapX = (gx) => ((gx - config.x) / config.scale) * resizeFactor;
+            const getMapY = (gy) => ((config.y - gy) / config.scale) * resizeFactor;
+            const getMapRot = (yaw) => (-yaw) + 90;
+
+            let currentMapRotation = 0;
+
+            if (trackedPlayer) {
+                const tx = getMapX(trackedPlayer.X);
+                const ty = getMapY(trackedPlayer.Y);
+                currentMapRotation = getMapRot(trackedPlayer.Yaw);
+
+                // FIXED TRANSFORM ORDER: Center View -> Rotate Map -> Move to Player
+                // This prevents "swimming" and mirrors correctly.
+                mapContainer.style.transform = `translate(500px, 500px) rotate(${-currentMapRotation}deg) translate(${-tx}px, ${-ty}px)`;
+            } else {
+                mapContainer.style.transform = `translate(0px, 0px) rotate(0deg)`;
+            }
+
             players.forEach(p => {
-                // Official Coordinate Conversion Math
-                const mapX = ((p.X - config.x) / config.scale) * resizeFactor;
-                const mapY = ((config.y - p.Y) / config.scale) * resizeFactor;
+                const mX = getMapX(p.X);
+                const mY = getMapY(p.Y);
+                const pRot = getMapRot(p.Yaw);
 
-                // Ensure dots stay inside the 1000x1000 area
-                if (mapX >= 0 && mapX <= 1000 && mapY >= 0 && mapY <= 1000) {
-                    // Create DOT
-                    const dot = document.createElement('div');
-                    dot.className = `player-dot team-${p.Team}`;
-                    dot.style.left = mapX + 'px';
-                    dot.style.top = mapY + 'px';
+                // Create Dot
+                const dot = document.createElement('div');
+                dot.className = `player-dot team-${p.Team}`;
+                dot.style.left = mX + 'px';
+                dot.style.top = mY + 'px';
+                // Individual dot orientation relative to map
+                dot.style.transform = `rotate(${pRot}deg)`;
 
-                    // Create NAME
-                    const nameLabel = document.createElement('div');
-                    nameLabel.className = 'player-name';
-                    nameLabel.style.left = mapX + 'px';
-                    nameLabel.style.top = mapY + 'px';
-                    nameLabel.innerText = p.Name;
+                const pointer = document.createElement('div');
+                pointer.className = 'view-pointer';
+                dot.appendChild(pointer);
 
-                    playerLayer.appendChild(dot);
-                    playerLayer.appendChild(nameLabel);
-                }
+                // Create Name
+                const nameContainer = document.createElement('div');
+                nameContainer.style.position = 'absolute';
+                nameContainer.style.left = mX + 'px';
+                nameContainer.style.top = mY + 'px';
+                
+                const name = document.createElement('div');
+                name.className = 'player-name';
+                name.innerText = p.Name;
+                // Counter-rotate names by the INVERSE of the current map rotation 
+                // so they stay horizontal on your monitor.
+                name.style.transform = `rotate(${currentMapRotation}deg)`; 
+                
+                nameContainer.appendChild(name);
+                playerLayer.appendChild(dot);
+                playerLayer.appendChild(nameContainer);
             });
         }
     </script>
