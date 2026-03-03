@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\dahmo\\Desktop\\cs2\\working cs2 spotify\\radar_kernal_hopdriver_website integrated\\radar_kernal_hopdriver\\radar_kernal_hopdriver.csproj": {}
+    "C:\\Users\\dahmo\\Desktop\\github\\radar_kernal_hopdriver_website-integrated\\radar_kernal_hopdriver_website integrated\\radar_kernal_hopdriver\\radar_kernal_hopdriver.csproj": {}
   },
   "projects": {
-    "C:\\Users\\dahmo\\Desktop\\cs2\\working cs2 spotify\\radar_kernal_hopdriver_website integrated\\radar_kernal_hopdriver\\radar_kernal_hopdriver.csproj": {
+    "C:\\Users\\dahmo\\Desktop\\github\\radar_kernal_hopdriver_website-integrated\\radar_kernal_hopdriver_website integrated\\radar_kernal_hopdriver\\radar_kernal_hopdriver.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\dahmo\\Desktop\\cs2\\working cs2 spotify\\radar_kernal_hopdriver_website integrated\\radar_kernal_hopdriver\\radar_kernal_hopdriver.csproj",
+        "projectUniqueName": "C:\\Users\\dahmo\\Desktop\\github\\radar_kernal_hopdriver_website-integrated\\radar_kernal_hopdriver_website integrated\\radar_kernal_hopdriver\\radar_kernal_hopdriver.csproj",
         "projectName": "radar_kernal_hopdriver",
-        "projectPath": "C:\\Users\\dahmo\\Desktop\\cs2\\working cs2 spotify\\radar_kernal_hopdriver_website integrated\\radar_kernal_hopdriver\\radar_kernal_hopdriver.csproj",
+        "projectPath": "C:\\Users\\dahmo\\Desktop\\github\\radar_kernal_hopdriver_website-integrated\\radar_kernal_hopdriver_website integrated\\radar_kernal_hopdriver\\radar_kernal_hopdriver.csproj",
         "packagesPath": "C:\\Users\\dahmo\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\dahmo\\Desktop\\cs2\\working cs2 spotify\\radar_kernal_hopdriver_website integrated\\radar_kernal_hopdriver\\obj\\",
+        "outputPath": "C:\\Users\\dahmo\\Desktop\\github\\radar_kernal_hopdriver_website-integrated\\radar_kernal_hopdriver_website integrated\\radar_kernal_hopdriver\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\dahmo\\AppData\\Roaming\\NuGet\\NuGet.Config",

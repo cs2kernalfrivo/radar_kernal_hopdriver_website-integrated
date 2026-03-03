@@ -99,14 +99,20 @@ namespace WebRadarSender
             {
                 try
                 {
-                    // 1. Get Map Name
+                    // 1. Get Map Name safely
                     ulong globalVars = driver.ReadMemory<ulong>(pid, clientBase + (ulong)dwGlobalVars);
-                    ulong mapNamePtr = driver.ReadMemory<ulong>(pid, globalVars + 0x180);
                     string currentMap = "unknown";
-                    if (mapNamePtr != 0)
+                    if (globalVars != 0)
                     {
-                        byte[] mapBytes = driver.ReadMemory(pid, mapNamePtr, 32);
-                        currentMap = Encoding.UTF8.GetString(mapBytes).Split('\0')[0];
+                        ulong mapNamePtr = driver.ReadMemory<ulong>(pid, globalVars + 0x180);
+                        if (mapNamePtr != 0)
+                        {
+                            byte[] mapBytes = driver.ReadMemory(pid, mapNamePtr, 32);
+                            if (mapBytes != null && mapBytes.Length > 0)
+                            {
+                                currentMap = Encoding.UTF8.GetString(mapBytes).Split('\0')[0];
+                            }
+                        }
                     }
 
                     // 2. Gather Player Data
@@ -119,6 +125,8 @@ namespace WebRadarSender
                         for (int i = 0; i < 64; i++)
                         {
                             if (listEntry == 0) continue;
+
+                            // Note: 0x70 (112) is the correct stride for newer CS2 versions. 
                             ulong currentController = driver.ReadMemory<ulong>(pid, listEntry + (ulong)(i * 0x70));
                             if (currentController == 0) continue;
 
@@ -131,19 +139,25 @@ namespace WebRadarSender
                             ulong currentPawn = driver.ReadMemory<ulong>(pid, listEntry2 + (ulong)(0x70 * (pawnHandle & 0x1FF)));
                             if (currentPawn == 0) continue;
 
-                            // Force in-game radar
-                            ulong spottedAddress = currentPawn + (ulong)m_entitySpottedState + (ulong)m_bSpotted;
-                            driver.WriteMemory<bool>(pid, spottedAddress, true);
-
-                            // Read Health
+                            // Read Health FIRST before writing to memory to double-check if it's a valid entity
                             int health = driver.ReadMemory<int>(pid, currentPawn + (ulong)m_iHealth);
                             if (health <= 0 || health > 100) continue;
 
-                            // Read Name, Team, and Pos
+                            // Force in-game radar safely (Only execute if currentPawn is a validated pointer!)
+                            ulong spottedAddress = currentPawn + (ulong)m_entitySpottedState + (ulong)m_bSpotted;
+                            driver.WriteMemory<bool>(pid, spottedAddress, true);
+
+                            // Read Team & Pos
                             int team = driver.ReadMemory<int>(pid, currentPawn + (ulong)m_iTeamNum);
                             Vector3 pos = driver.ReadMemory<Vector3>(pid, currentPawn + (ulong)m_vOldOrigin);
+
+                            // Read Name safely
+                            string name = "Unknown";
                             byte[] nameBytes = driver.ReadMemory(pid, currentController + (ulong)m_iszPlayerName, 16);
-                            string name = Encoding.UTF8.GetString(nameBytes).Split('\0')[0];
+                            if (nameBytes != null && nameBytes.Length > 0)
+                            {
+                                name = Encoding.UTF8.GetString(nameBytes).Split('\0')[0];
+                            }
 
                             webPlayerData.Add(new Player
                             {
@@ -156,7 +170,7 @@ namespace WebRadarSender
                         }
                     }
 
-                    // 3. Send Packet (MapName + List of Players)
+                    // 3. Send Packet
                     var packet = new RadarPacket
                     {
                         MapName = currentMap,
@@ -175,18 +189,18 @@ namespace WebRadarSender
                 }
                 Thread.Sleep(20);
             }
-        }
 
-        static async Task SendToDjango(RadarPacket data)
-        {
-            try
+            static async Task SendToDjango(RadarPacket data)
             {
-                string json = JsonSerializer.Serialize(data);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
-                await httpClient.PostAsync("http://127.0.0.1:8000/api/radar/update/", content);
-                isServerConnected = true;
+                try
+                {
+                    string json = JsonSerializer.Serialize(data);
+                    var content = new StringContent(json, Encoding.UTF8, "application/json");
+                    await httpClient.PostAsync("http://98.89.6.230/api/radar/update/", content);
+                    isServerConnected = true;
+                }
+                catch { isServerConnected = false; }
             }
-            catch { isServerConnected = false; }
         }
     }
 }

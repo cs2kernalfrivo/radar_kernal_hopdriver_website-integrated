@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("radar_kernal_hopdriver")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ce365e46e7421c164657317f0a6252da8854752b")]
 [assembly: System.Reflection.AssemblyProductAttribute("radar_kernal_hopdriver")]
 [assembly: System.Reflection.AssemblyTitleAttribute("radar_kernal_hopdriver")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
