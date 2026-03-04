@@ -138,7 +138,11 @@
         let trackedPlayerName = "none";
         const resizeFactor = 1000 / 1024;
 
-        const socket = new WebSocket('ws://' + window.location.host + '/ws/radar/');
+        const socket = new WebSocket(
+            (window.location.protocol === "https:" ? "wss://" : "ws://") +
+            window.location.host +
+            "/ws/radar/"
+        );
 
         playerSelect.addEventListener('change', (e) => { trackedPlayerName = e.target.value; });
 
