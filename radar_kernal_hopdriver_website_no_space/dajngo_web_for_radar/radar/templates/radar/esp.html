@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><title>CS2 Web ESP - Zero Lag</title>
+    <style>
+        body, html { margin: 0; padding: 0; overflow: hidden; background-color: #000; font-family: 'Segoe UI', sans-serif; font-weight: bold; }
+        #esp-canvas { display: block; width: 100vw; height: 100vh; pointer-events: none; position: absolute; top: 0; left: 0; }
+        #menu-btn {
+            position: absolute; top: 15px; left: 15px; background: rgba(30, 30, 30, 0.9); color: #00b4ff;
+            border: 1px solid #444; padding: 8px 15px; cursor: pointer; border-radius: 4px; z-index: 1000; font-size: 12px;
+        }
+        #player-list {
+            position: absolute; top: 55px; left: 15px; background: rgba(10, 10, 10, 0.98);
+            border: 1px solid #333; width: 200px; max-height: 400px; overflow-y: auto; display: none; z-index: 1000;
+        }
+        .player-item { padding: 10px; border-bottom: 1px solid #222; color: #ccc; cursor: pointer; font-size: 12px; }
+        .player-item:hover { background: #00b4ff; color: #000; }
+        .active-player { border-left: 3px solid #00b4ff; background: #1a1a1a; color: #fff; }
+        #perspective-info { position: absolute; bottom: 15px; left: 15px; color: #555; font-size: 11px; }
+    </style>
+</head>
+<body>
+
+    <button id="menu-btn">PERSPECTIVE</button>
+    <div id="player-list"><div class="player-item" onclick="setPerspective('none', -1)">-- Local Player --</div></div>
+    <div id="perspective-info">Perspective: Local</div>
+    <canvas id="esp-canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('esp-canvas');
+        const ctx = canvas.getContext('2d');
+        const menuBtn = document.getElementById('menu-btn');
+        const playerList = document.getElementById('player-list');
+        const perspectiveInfo = document.getElementById('perspective-info');
+        
+        let data = null;
+        let selectedPlayerName = "none", selectedPlayerTeam = -1;
+
+        // WebSocket with high-priority handling
+        const socket = new WebSocket('ws://' + window.location.host + '/ws/esp/');
+        socket.onmessage = (e) => { 
+            // We immediately overwrite 'data'. We never want to draw old packets.
+            data = JSON.parse(e.data); 
+        };
+
+        menuBtn.onclick = () => {
+            playerList.style.display = playerList.style.display === 'block' ? 'none' : 'block';
+            if (playerList.style.display === 'block') {
+                playerList.innerHTML = `<div class="player-item ${selectedPlayerName === 'none' ? 'active-player' : ''}" onclick="setPerspective('none', -1)">-- Local Player --</div>`;
+                if(data && data.p) {
+                    data.p.forEach(p => {
+                        const div = document.createElement('div');
+                        div.className = `player-item ${selectedPlayerName === p.n ? 'active-player' : ''}`;
+                        div.innerText = p.n;
+                        div.onclick = () => setPerspective(p.n, p.t);
+                        playerList.appendChild(div);
+                    });
+                }
+            }
+        };
+
+        function setPerspective(name, team) {
+            selectedPlayerName = name; selectedPlayerTeam = team;
+            perspectiveInfo.innerText = `Perspective: ${name === 'none' ? 'Local' : name}`;
+            playerList.style.display = 'none';
+        }
+
+        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        window.onresize = resize; resize();
+
+        function w2s(m, p, w, h) {
+            if (!p || !m) return null;
+            const z = m[12]*p.X + m[13]*p.Y + m[14]*p.Z + m[15];
+            if (z < 0.1) return null;
+            return {
+                x: (w/2) + (w/2) * (m[0]*p.X + m[1]*p.Y + m[2]*p.Z + m[3]) / z,
+                y: (h/2) - (h/2) * (m[4]*p.X + m[5]*p.Y + m[6]*p.Z + m[7]) / z
+            };
+        }
+
+        // Optimized Drawing Logic
+        const bones = [[6,5],[5,0],[5,8],[8,9],[9,11],[5,13],[13,14],[14,16],[0,23],[23,24],[0,26],[26,27]];
+
+        function draw() {
+            // High-speed clear
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if (data && data.p) {
+                const m = data.v, w = canvas.width, h = canvas.height;
+                const pTeam = (selectedPlayerTeam === -1) ? data.lt : selectedPlayerTeam;
+
+                for (let i = 0; i < data.p.length; i++) {
+                    const p = data.p[i];
+                    if (p.h <= 0) continue;
+                    
+                    const head = w2s(m, p.b["6"], w, h);
+                    const feet = w2s(m, {X:p.x, Y:p.y, Z:p.z}, w, h);
+                    if (!head || !feet) continue;
+
+                    const color = (p.t === pTeam) ? '#00b4ff' : '#ff3232';
+
+                    // 1. Draw Skeleton (Fastest path)
+                    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+                    ctx.lineWidth = 1;
+                    for (let j = 0; j < bones.length; j++) {
+                        const p1 = w2s(m, p.b[bones[j][0]], w, h);
+                        const p2 = w2s(m, p.b[bones[j][1]], w, h);
+                        if (p1 && p2) {
+                            ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+                        }
+                    }
+
+                    // 2. Draw Box
+                    const boxH = feet.y - head.y; const boxW = boxH / 1.8;
+                    ctx.strokeStyle = color; ctx.lineWidth = 2;
+                    ctx.strokeRect(head.x - boxW/2, head.y, boxW, boxH);
+                    
+                    // 3. Health
+                    ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(head.x - boxW/2 - 5, head.y, 3, boxH);
+                    ctx.fillStyle = p.h > 50 ? '#0f0' : (p.h > 25 ? '#ff0' : '#f00');
+                    ctx.fillRect(head.x - boxW/2 - 5, head.y + boxH, 4, -boxH * (p.h/100));
+
+                    // 4. Name
+                    ctx.fillStyle = 'white'; ctx.font = '11px Arial'; ctx.textAlign = 'center';
+                    ctx.fillText(p.n, head.x, head.y - 7);
+                }
+            }
+            requestAnimationFrame(draw);
+        }
+        draw();
+    </script>
+</body>
+</html>

@@ -1,21 +1,49 @@
 import json
-from channels.generic.websocket import WebsocketConsumer
-from asgiref.sync import async_to_sync
+from channels.generic.websocket import AsyncWebsocketConsumer
 
-class RadarConsumer(WebsocketConsumer):
-    def connect(self):
-        # FIX: group_add is async, must use async_to_sync in a sync consumer
-        async_to_sync(self.channel_layer.group_add)("radar", self.channel_name)
-        self.accept()
-        print(f"DEBUG: Browser connected and joined 'radar' group.")
+class RadarConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        await self.channel_layer.group_add("radar", self.channel_name)
+        await self.accept()
 
-    def disconnect(self, close_code):
-        # FIX: group_discard is async
-        async_to_sync(self.channel_layer.group_discard)("radar", self.channel_name)
-        print("DEBUG: Browser disconnected.")
+    async def disconnect(self, close_code):
+        await self.channel_layer.group_discard("radar", self.channel_name)
 
-    # This method is called when the view sends a message to the group
-    def radar_update(self, event):
-        # print(f"DEBUG: Consumer received data for {len(event['data'])} players")
-        # Send the received data down the WebSocket to the browser
-        self.send(text_data=json.dumps(event['data']))
+    async def radar_update(self, event):
+        # Data is already a JSON string from InboundConsumer
+        await self.send(text_data=event['data'])
+
+# radar/consumers.py
+import json
+from channels.generic.websocket import AsyncWebsocketConsumer
+
+class InboundDataConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        await self.accept()
+
+    async def receive(self, text_data):
+        # This sends the raw C# string to the 'esp' and 'radar' groups
+        await self.channel_layer.group_send(
+            "esp", {
+                "type": "esp.update",
+                "data": text_data # This is the raw JSON string
+            }
+        )
+        await self.channel_layer.group_send(
+            "radar", {
+                "type": "radar.update",
+                "data": text_data
+            }
+        )
+
+class ESPConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        await self.channel_layer.group_add("esp", self.channel_name)
+        await self.accept()
+
+    async def disconnect(self, close_code):
+        await self.channel_layer.group_discard("esp", self.channel_name)
+
+    async def esp_update(self, event):
+        # event['data'] is the JSON string sent from InboundDataConsumer
+        await self.send(text_data=event['data'])
