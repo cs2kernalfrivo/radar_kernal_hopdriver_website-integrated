@@ -1,28 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8"><title>CS2 Web ESP - Zero Lag</title>
+    <meta charset="UTF-8"><title>CS2 Web ESP - Secure Stream</title>
     <style>
         body, html { margin: 0; padding: 0; overflow: hidden; background-color: #000; font-family: 'Segoe UI', sans-serif; font-weight: bold; }
         #esp-canvas { display: block; width: 100vw; height: 100vh; pointer-events: none; position: absolute; top: 0; left: 0; }
+        
+        /* Floating Menu Button */
         #menu-btn {
             position: absolute; top: 15px; left: 15px; background: rgba(30, 30, 30, 0.9); color: #00b4ff;
             border: 1px solid #444; padding: 8px 15px; cursor: pointer; border-radius: 4px; z-index: 1000; font-size: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
+        #menu-btn:hover { background: #222; border-color: #00b4ff; }
+
+        /* Player List Overlay */
         #player-list {
             position: absolute; top: 55px; left: 15px; background: rgba(10, 10, 10, 0.98);
             border: 1px solid #333; width: 200px; max-height: 400px; overflow-y: auto; display: none; z-index: 1000;
+            border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
         }
         .player-item { padding: 10px; border-bottom: 1px solid #222; color: #ccc; cursor: pointer; font-size: 12px; }
         .player-item:hover { background: #00b4ff; color: #000; }
         .active-player { border-left: 3px solid #00b4ff; background: #1a1a1a; color: #fff; }
-        #perspective-info { position: absolute; bottom: 15px; left: 15px; color: #555; font-size: 11px; }
+
+        #perspective-info { position: absolute; bottom: 15px; left: 15px; color: #555; font-size: 11px; background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 3px; }
+        #status { position: absolute; top: 10px; right: 20px; color: #0f0; font-size: 11px; font-family: monospace; opacity: 0.5; }
     </style>
 </head>
 <body>
 
-    <button id="menu-btn">PERSPECTIVE</button>
-    <div id="player-list"><div class="player-item" onclick="setPerspective('none', -1)">-- Local Player --</div></div>
+    <button id="menu-btn">SELECT PERSPECTIVE</button>
+    <div id="player-list">
+        <div class="player-item" onclick="setPerspective('none', -1)">-- Local Player --</div>
+    </div>
+    
+    <div id="status">WAITING...</div>
     <div id="perspective-info">Perspective: Local</div>
     <canvas id="esp-canvas"></canvas>
 
@@ -32,20 +45,30 @@
         const menuBtn = document.getElementById('menu-btn');
         const playerList = document.getElementById('player-list');
         const perspectiveInfo = document.getElementById('perspective-info');
+        const statusText = document.getElementById('status');
         
         let data = null;
         let selectedPlayerName = "none", selectedPlayerTeam = -1;
 
-        // WebSocket with high-priority handling
-        const socket = new WebSocket('ws://' + window.location.host + '/ws/esp/');
+        // --- HOSTED WEBSOCKET LOGIC ---
+        // Automatically use wss:// if site is https://
+        const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+        const socket = new WebSocket(protocol + window.location.host + '/ws/esp/');
+
+        socket.onopen = () => { statusText.innerText = 'CONNECTED'; console.log("Secure Socket Open"); };
+        socket.onclose = () => { statusText.innerText = 'DISCONNECTED'; };
+        socket.onerror = (err) => { statusText.innerText = 'SSL/WS ERROR'; console.error(err); };
+
         socket.onmessage = (e) => { 
-            // We immediately overwrite 'data'. We never want to draw old packets.
             data = JSON.parse(e.data); 
+            if(statusText.innerText !== 'LIVE') statusText.innerText = 'LIVE';
         };
 
+        // --- UI LOGIC ---
         menuBtn.onclick = () => {
             playerList.style.display = playerList.style.display === 'block' ? 'none' : 'block';
             if (playerList.style.display === 'block') {
+                // Refresh list
                 playerList.innerHTML = `<div class="player-item ${selectedPlayerName === 'none' ? 'active-player' : ''}" onclick="setPerspective('none', -1)">-- Local Player --</div>`;
                 if(data && data.p) {
                     data.p.forEach(p => {
@@ -68,6 +91,7 @@
         function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
         window.onresize = resize; resize();
 
+        // --- MATH & DRAWING ---
         function w2s(m, p, w, h) {
             if (!p || !m) return null;
             const z = m[12]*p.X + m[13]*p.Y + m[14]*p.Z + m[15];
@@ -78,11 +102,9 @@
             };
         }
 
-        // Optimized Drawing Logic
         const bones = [[6,5],[5,0],[5,8],[8,9],[9,11],[5,13],[13,14],[14,16],[0,23],[23,24],[0,26],[26,27]];
 
         function draw() {
-            // High-speed clear
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
             if (data && data.p) {
@@ -99,18 +121,18 @@
 
                     const color = (p.t === pTeam) ? '#00b4ff' : '#ff3232';
 
-                    // 1. Draw Skeleton (Fastest path)
+                    // 1. Skeleton
                     ctx.strokeStyle = 'rgba(255,255,255,0.7)';
                     ctx.lineWidth = 1;
                     for (let j = 0; j < bones.length; j++) {
-                        const p1 = w2s(m, p.b[bones[j][0]], w, h);
-                        const p2 = w2s(m, p.b[bones[j][1]], w, h);
+                        const p1 = w2s(m, p.b[bones[j][0].toString()], w, h);
+                        const p2 = w2s(m, p.b[bones[j][1].toString()], w, h);
                         if (p1 && p2) {
                             ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
                         }
                     }
 
-                    // 2. Draw Box
+                    // 2. Box
                     const boxH = feet.y - head.y; const boxW = boxH / 1.8;
                     ctx.strokeStyle = color; ctx.lineWidth = 2;
                     ctx.strokeRect(head.x - boxW/2, head.y, boxW, boxH);
