@@ -52,12 +52,21 @@
 
         // --- HOSTED WEBSOCKET LOGIC ---
         // Automatically use wss:// if site is https://
+        // --- DYNAMIC PROTOCOL DETECTION ---
+        // This checks if the page is https or http and chooses wss or ws accordingly
         const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
         const socket = new WebSocket(protocol + window.location.host + '/ws/esp/');
 
-        socket.onopen = () => { statusText.innerText = 'CONNECTED'; console.log("Secure Socket Open"); };
+        socket.onopen = () => { 
+            statusText.innerText = 'CONNECTED (SECURE)'; 
+            console.log("Connected to Secure WebSocket: " + protocol + window.location.host); 
+        };
+
         socket.onclose = () => { statusText.innerText = 'DISCONNECTED'; };
-        socket.onerror = (err) => { statusText.innerText = 'SSL/WS ERROR'; console.error(err); };
+        socket.onerror = (err) => { 
+            statusText.innerText = 'WS ERROR - CHECK CONSOLE'; 
+            console.error("WebSocket Connection Failed. Protocol used: " + protocol);
+        };
 
         socket.onmessage = (e) => { 
             data = JSON.parse(e.data); 
